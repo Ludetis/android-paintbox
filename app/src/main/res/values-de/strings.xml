@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Dein Malkasten</string>
+    <string name="send_to">Senden an...</string>
+    <string name="hold_to_share">Halten, um Bild zu teilen</string>
+    <string name="info">Der LUDETIS Malkasten für Kinder ist gratis und werbefrei. Habt Spaß damit! Eure Eltern möchten vielleicht einen Blick auf unsere Spiele werfen. HINWEIS: Um versehentliche Benutzung zu verhindern, erfordert der Teilen-Knopf einen langen Fingerdruck!</string>
+
+</resources>

@@ -1,0 +1,34 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 19
+    buildToolsVersion "19.1.0"
+
+    defaultConfig {
+        applicationId "de.ludetis.android.malkasten"
+        minSdkVersion 14
+        targetSdkVersion 14
+        versionCode 3
+        versionName "1.2"
+    }
+    signingConfigs {
+        releaseConfig {
+            storeFile file("ludetis_keystore")
+            storePassword "byeneodatis"
+            keyAlias "ludetis.de"
+            keyPassword "byeneodatis"
+        }
+    }
+    buildTypes {
+        release {
+            runProguard false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.releaseConfig
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.android.support:support-v4:19.1.0'
+}
