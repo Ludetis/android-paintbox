@@ -10,8 +10,6 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 
 import de.ludetis.android.malkasten.R;
 
@@ -36,7 +34,7 @@ public class ColorChooserView extends View implements View.OnClickListener {
     public ColorChooserView(Context context, AttributeSet attrs) {
         super(context, attrs);
         TypedArray a = context.obtainStyledAttributes(attrs,R.styleable.ColorChooserView, 0, 0);
-        color = a.getColor(R.styleable.ColorChooserView_color, android.R.color.holo_blue_light);
+        color = a.getColor(R.styleable.ColorChooserView_color, getResources().getColor(android.R.color.holo_blue_light));
         a.recycle();
         init();
     }
@@ -44,7 +42,7 @@ public class ColorChooserView extends View implements View.OnClickListener {
     public ColorChooserView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         TypedArray a = context.obtainStyledAttributes(attrs,R.styleable.ColorChooserView, 0, 0);
-        color = a.getColor(R.styleable.ColorChooserView_color, android.R.color.holo_blue_light);
+        color = a.getColor(R.styleable.ColorChooserView_color, getResources().getColor(android.R.color.holo_blue_light));
         a.recycle();
         init();
     }
@@ -57,6 +55,7 @@ public class ColorChooserView extends View implements View.OnClickListener {
 
     @Override
     public void draw(Canvas canvas) {
+        super.draw(canvas);
         if(bgDrawable==null) {
             bgDrawable = getResources().getDrawable(R.drawable.farbe);
             rectSrc = new Rect(0,0,127,127);
