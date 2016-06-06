@@ -11,6 +11,7 @@ import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.content.FileProvider;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -41,6 +42,7 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
     private static final int IMG_WIDTH = 800;
     private static final int IMG_HEIGHT = 600;
     private static final float STROKE_WIDTH = 20;
+    private static final int HIDE_SYSTEM_UI_DELAY = 3;
     private static final float DIST_THRESHOLD = 1;
     private ImageView image;
     private boolean down;
@@ -50,7 +52,14 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
     private float scale;
     private float pressureScale;
     private Map<Integer,Coord> from = new HashMap<Integer, Coord>();
+    private Handler handler = new Handler();
 
+    private Runnable hideSystemUiRunnable = new Runnable() {
+        @Override
+        public void run() {
+            hideSystemUi();
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,8 +138,9 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
     protected void onResume() {
         super.onResume();
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             hideSystemUi();
+        }
     }
 
 
@@ -138,6 +148,9 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
 
 
     private void hideSystemUi() {
+        if("KFTT".equals(android.os.Build.MODEL) ) {
+            return;
+        }
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                         | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
@@ -178,7 +191,8 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
 
-        //mHidePart2Runnable.run();
+
+
         if(fw==0) fw = 1f*IMG_WIDTH/image.getWidth();
         if(fh==0) fh = 1f*IMG_HEIGHT/image.getHeight();
         int action = event.getActionMasked();
@@ -190,6 +204,7 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
                 from.put(pointerId, new Coord(x, y));
+                handler.postDelayed(hideSystemUiRunnable, 1000 * HIDE_SYSTEM_UI_DELAY);
                 break;
 
             case MotionEvent.ACTION_POINTER_DOWN:

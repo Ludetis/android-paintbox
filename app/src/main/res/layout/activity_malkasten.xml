@@ -162,7 +162,7 @@
                     <de.ludetis.android.view.ColorChooserView
                         android:layout_width="@dimen/chooser_size"
                         android:layout_height="@dimen/chooser_size"
-                        custom:color="#aab0ff"/>
+                        custom:color="#bbddff"/>
 
 
 
