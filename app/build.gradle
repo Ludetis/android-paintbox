@@ -2,14 +2,14 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 22
-    buildToolsVersion "23.0.2"
+    buildToolsVersion "24.0.2"
 
     defaultConfig {
         applicationId "de.ludetis.android.malkasten"
         minSdkVersion 14
         targetSdkVersion 22
-        versionCode 154
-        versionName "1.5.4"
+        versionCode 155
+        versionName "1.5.5"
     }
     signingConfigs {
         releaseConfig {

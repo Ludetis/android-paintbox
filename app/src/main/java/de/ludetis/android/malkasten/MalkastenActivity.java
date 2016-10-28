@@ -1,7 +1,7 @@
 package de.ludetis.android.malkasten;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -13,12 +13,15 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.content.FileProvider;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -41,18 +44,16 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
 
     private static final int IMG_WIDTH = 800;
     private static final int IMG_HEIGHT = 600;
-    private static final float STROKE_WIDTH = 20;
+    private static final float STROKE_WIDTH = 32;
     private static final int HIDE_SYSTEM_UI_DELAY = 3;
-    private static final float DIST_THRESHOLD = 1;
     private ImageView image;
-    private boolean down;
     private Bitmap bitmap;
     private Paint paint;
     private float fw, fh;
-    private float scale;
-    private float pressureScale;
     private Map<Integer,Coord> from = new HashMap<Integer, Coord>();
     private Handler handler = new Handler();
+    private TextView tvInfo;
+    private SharedPreferences prefs;
 
     private Runnable hideSystemUiRunnable = new Runnable() {
         @Override
@@ -65,7 +66,6 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_malkasten);
-        pressureScale = getResources().getDimension(R.dimen.pressure_scale);
 
         image = (ImageView) findViewById(R.id.image);
         image.setOnTouchListener(this);
@@ -77,6 +77,9 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
         paint.setStrokeWidth(STROKE_WIDTH);
         paint.setStrokeCap(Paint.Cap.ROUND);
         paint.setStrokeJoin(Paint.Join.ROUND);
+        prefs = getSharedPreferences("paintbox",0);
+
+        tvInfo = (TextView) findViewById(R.id.info);
 
         findViewById(R.id.trash).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -124,14 +127,12 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
             }
         });
 
-        scale = getResources().getDisplayMetrics().density;
 
         SharedPreferences sp = getSharedPreferences("malkasten",0);
         if(sp.getBoolean("showInfo",true)) {
             showInfo();
         }
-
-        //findViewById(R.id.fullscreen_content).setSystemUiVisibility(View.STATUS_BAR_HIDDEN);
+        //showInfo(); // comment in to test this dialog
     }
 
     @Override
@@ -161,7 +162,18 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
     }
 
     private void showInfo() {
-        (new AlertDialog.Builder(this)).setMessage(R.string.info).setPositiveButton(android.R.string.ok,null).show();
+        final Dialog ad = new Dialog(this, android.R.style.Theme_Translucent_NoTitleBar_Fullscreen);
+        ad.setContentView(R.layout.dlg_welcome);
+        TextView tv = (TextView) ad.findViewById(R.id.info);
+        tv.setMovementMethod(LinkMovementMethod.getInstance());
+        tv.setText(Html.fromHtml(getString(R.string.info)));
+        ad.findViewById(R.id.start).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(ad!=null) ad.dismiss();
+            }
+        });
+        ad.show();
         SharedPreferences sp = getSharedPreferences("malkasten",0);
         SharedPreferences.Editor edit = sp.edit();
         edit.putBoolean("showInfo",false);
@@ -191,8 +203,6 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
 
-
-
         if(fw==0) fw = 1f*IMG_WIDTH/image.getWidth();
         if(fh==0) fh = 1f*IMG_HEIGHT/image.getHeight();
         int action = event.getActionMasked();
@@ -201,6 +211,9 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
         float x = event.getX(actionIndex);
         float y = event.getY(actionIndex);
         float pressure = event.getPressure(actionIndex);
+        notifyPressureCalibration(pressure);
+        pressure = calcCalibratedPressure(pressure);
+        //tvInfo.setText(String.format("%1$.2f",pressure)); // TODO uncomment to have a pressure display
         switch (action) {
             case MotionEvent.ACTION_DOWN:
                 from.put(pointerId, new Coord(x, y));
@@ -253,16 +266,39 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
         return true;
     }
 
+    private void notifyPressureCalibration(float pressure) {
+        float minKnownPressure = prefs.getFloat("minPressure",1);
+        float maxKnownPressure = prefs.getFloat("maxPressure",0);
+        SharedPreferences.Editor ed = prefs.edit();
+        if(pressure<minKnownPressure) {
+            ed.putFloat("minPressure",pressure);
+            Log.d("LOG", "minPressure now is " + pressure);
+        }
+        if(pressure>maxKnownPressure) {
+            ed.putFloat("maxPressure",pressure);
+            Log.d("LOG", "maxPressure now is " + pressure);
+        }
+        ed.commit();
+    }
+
+    private float calcCalibratedPressure(float pressure) {
+        float minKnownPressure = prefs.getFloat("minPressure",0);
+        float maxKnownPressure = prefs.getFloat("maxPressure",1);
+        if(maxKnownPressure-minKnownPressure==0) return pressure;
+        return pressure/(maxKnownPressure-minKnownPressure);
+    }
+
     private void draw(float x1, float y1, float x2, float y2, float pressure) {
         if(pressure>1f) pressure=1f;
         Canvas canvas = new Canvas(bitmap);
         paint.setColor(ColorChooserView.getPaintColor());
+
         if(x1==x1 && y1==y2) {
             paint.setStyle(Paint.Style.FILL);
-            canvas.drawCircle(x1*fw,y1*fh,scale*pressure*STROKE_WIDTH*pressureScale/2/2, paint);
+            canvas.drawCircle(x1*fw,y1*fh,pressure*STROKE_WIDTH/2, paint);
         } else {
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(STROKE_WIDTH * pressure * pressureScale * scale/2);
+            paint.setStrokeWidth(pressure*STROKE_WIDTH);
             canvas.drawLine(x1*fw,y1*fh,x2*fw,y2*fh,paint);
         }
         image.invalidate();

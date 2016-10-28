@@ -5,5 +5,5 @@
     <dimen name="activity_horizontal_margin">64dp</dimen>
     <dimen name="chooser_size">120dp</dimen>
 
-    <dimen name="pressure_scale">20dp</dimen>
+    <dimen name="pressure_scale">2dp</dimen>
 </resources>

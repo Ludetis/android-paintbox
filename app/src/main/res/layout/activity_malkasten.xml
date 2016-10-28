@@ -93,6 +93,12 @@
                         android:layout_width="@dimen/chooser_size"
                         android:layout_height="@dimen/chooser_size"
                         custom:color="#5010d0"/>
+
+                    <de.ludetis.android.view.ColorChooserView
+                        android:layout_width="@dimen/chooser_size"
+                        android:layout_height="@dimen/chooser_size"
+                        custom:color="#333333"/>
+
                 </LinearLayout>
             </ScrollView>
 
@@ -180,6 +186,10 @@
                         android:layout_width="@dimen/chooser_size"
                         android:layout_height="@dimen/chooser_size"
                         custom:color="#e0e0e0"/>
+                    <de.ludetis.android.view.ColorChooserView
+                        android:layout_width="@dimen/chooser_size"
+                        android:layout_height="@dimen/chooser_size"
+                        custom:color="#ffffff"/>
                 </LinearLayout>
             </ScrollView>
 
@@ -190,12 +200,20 @@
                 android:layout_height="@dimen/chooser_size"
                 android:src="@drawable/trash"/>
         </LinearLayout>
-
+<View
+    android:layout_width="1dp"
+    android:layout_height="match_parent" android:background="@color/black" />
         <ImageView
             android:id="@+id/image"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"/>
     </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|right"
+        android:id="@+id/info"/>
 
 </FrameLayout>

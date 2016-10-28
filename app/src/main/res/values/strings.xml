@@ -4,7 +4,7 @@
     <string name="app_name">Your PaintBox</string>
     <string name="send_to">send to...</string>
     <string name="hold_to_share">hold to share</string>
-    <string name="info">LUDETIS PaintBox for kids is completely free and ad-free and provided just for fun. Your parents might want to have a look at our games.  NOTE: As simple protection, the share button only works if held, not just touched.</string>
+    <string formatted="false" name="info">&lt;b>LUDETIS PaintBox for kids&lt;/b> is completely free and ad-free and provided just for fun. Your parents might want to have a look at our games.  NOTE: As simple protection, the share button only works if held, not just touched.</string>
 
 
 </resources>
