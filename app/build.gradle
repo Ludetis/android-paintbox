@@ -8,8 +8,8 @@ android {
         applicationId "de.ludetis.android.malkasten"
         minSdkVersion 14
         targetSdkVersion 22
-        versionCode 155
-        versionName "1.5.5"
+        versionCode 156
+        versionName "1.5.6"
     }
     signingConfigs {
         releaseConfig {

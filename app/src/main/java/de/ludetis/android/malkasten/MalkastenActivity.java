@@ -35,6 +35,8 @@ import de.ludetis.android.view.ColorChooserView;
 
 public class MalkastenActivity extends Activity implements View.OnTouchListener {
 
+    private static final int SHOW_PLEASE_RATE_AFTER_X_STARTS = 10;
+
     class Coord { public float x, y;
         Coord(float x, float y) {
             this.x = x;
@@ -128,11 +130,7 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
         });
 
 
-        SharedPreferences sp = getSharedPreferences("malkasten",0);
-        if(sp.getBoolean("showInfo",true)) {
-            showInfo();
-        }
-        //showInfo(); // comment in to test this dialog
+
     }
 
     @Override
@@ -142,10 +140,50 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             hideSystemUi();
         }
+
+        SharedPreferences sp = getSharedPreferences("malkasten",0);
+        if(sp.getBoolean("showInfo",true)) {
+            showInfo();
+        }
+        //showInfo(); // comment in to test this dialog
+        int starts = sp.getInt("starts1",0);
+        starts++;
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putInt("starts1",starts);
+
+        if(starts ==  SHOW_PLEASE_RATE_AFTER_X_STARTS ) {
+            showPleaseRate();
+        }
+        // uncomment to test
+        //showPleaseRate();
+        editor.commit();
+
     }
 
-
-
+    private void showPleaseRate() {
+        final Dialog ad = new Dialog(this, android.R.style.Theme_Translucent_NoTitleBar_Fullscreen);
+        ad.setContentView(R.layout.dlg_please_rate);
+        ad.findViewById(R.id.start).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(ad!=null) ad.dismiss();
+                final String appPackageName = getPackageName(); // getPackageName() from Context or Activity object
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + appPackageName)));
+                }
+                catch (Exception e) {
+                    // silently
+                }
+            }
+        });
+        ad.findViewById(R.id.cancel).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(ad!=null) ad.dismiss();
+            }
+        });
+        ad.show();
+    }
 
 
     private void hideSystemUi() {
@@ -174,10 +212,7 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
             }
         });
         ad.show();
-        SharedPreferences sp = getSharedPreferences("malkasten",0);
-        SharedPreferences.Editor edit = sp.edit();
-        edit.putBoolean("showInfo",false);
-        edit.apply();
+
     }
 
     private void shareImage(File f) {
