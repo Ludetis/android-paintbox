@@ -72,7 +72,13 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
         image = (ImageView) findViewById(R.id.image);
         image.setOnTouchListener(this);
         image.setScaleType(ImageView.ScaleType.FIT_XY);
-        newBitmap();
+        if (savedInstanceState != null) {
+            bitmap = savedInstanceState.getParcelable("bitmap");
+            image.setImageBitmap(bitmap);
+            image.invalidate();
+        }
+        else
+            newBitmap();
         paint = new Paint();
         paint.setStyle(Paint.Style.STROKE);
         paint.setAntiAlias(true);
@@ -337,5 +343,12 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
             canvas.drawLine(x1*fw,y1*fh,x2*fw,y2*fh,paint);
         }
         image.invalidate();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putParcelable("bitmap", bitmap);
+        super.onSaveInstanceState(outState);
+
     }
 }
