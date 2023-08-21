@@ -103,10 +103,10 @@
             </ScrollView>
 
             <ImageView
-                android:id="@+id/share"
+                android:id="@+id/save"
                 android:layout_width="@dimen/chooser_size"
                 android:layout_height="@dimen/chooser_size"
-                android:src="@drawable/share"/>
+                android:src="@drawable/save"/>
 
         </LinearLayout>
 

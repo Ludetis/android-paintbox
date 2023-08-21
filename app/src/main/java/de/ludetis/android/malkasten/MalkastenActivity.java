@@ -2,8 +2,11 @@ package de.ludetis.android.malkasten;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -12,10 +15,12 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.content.FileProvider;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
@@ -25,17 +30,26 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
+import androidx.core.content.FileProvider;
 import de.ludetis.android.view.ColorChooserView;
+import io.paperdb.Paper;
 
 
 public class MalkastenActivity extends Activity implements View.OnTouchListener {
 
-    private static final int SHOW_PLEASE_RATE_AFTER_X_STARTS = 10;
+    private static final int JPEG_QUALITY = 90;
+    private static final int RC_SAVE_IMG = 765;
+    public static final String BITMAP = "bitmap";
+
+    private final int[] colorPots = {};
 
     class Coord { public float x, y;
         Coord(float x, float y) {
@@ -43,10 +57,10 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
             this.y = y;
         }
     };
-
+    private Random rnd = new Random();
     private static final int IMG_WIDTH = 800;
     private static final int IMG_HEIGHT = 600;
-    private static final float STROKE_WIDTH = 32;
+    private static final float STROKE_WIDTH = 16;
     private static final int HIDE_SYSTEM_UI_DELAY = 3;
     private ImageView image;
     private Bitmap bitmap;
@@ -54,89 +68,112 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
     private float fw, fh;
     private Map<Integer,Coord> from = new HashMap<Integer, Coord>();
     private Handler handler = new Handler();
-    private TextView tvInfo;
     private SharedPreferences prefs;
 
-    private Runnable hideSystemUiRunnable = new Runnable() {
-        @Override
-        public void run() {
-            hideSystemUi();
-        }
-    };
+    private Runnable hideSystemUiRunnable = () -> hideSystemUi();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_malkasten);
 
+        Paper.init(this);
+
         image = (ImageView) findViewById(R.id.image);
         image.setOnTouchListener(this);
         image.setScaleType(ImageView.ScaleType.FIT_XY);
-        if (savedInstanceState != null) {
-            bitmap = savedInstanceState.getParcelable("bitmap");
+        if (savedInstanceState != null && BITMAP.equalsIgnoreCase(savedInstanceState.getString(BITMAP))) {
+            bitmap = Paper.book().read(BITMAP);
             image.setImageBitmap(bitmap);
             image.invalidate();
+            Paper.book().delete(BITMAP);
         }
         else
             newBitmap();
         paint = new Paint();
         paint.setStyle(Paint.Style.STROKE);
         paint.setAntiAlias(true);
-        paint.setStrokeWidth(STROKE_WIDTH);
+
+        DisplayMetrics dm = getResources().getDisplayMetrics() ;
+        paint.setStrokeWidth(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, STROKE_WIDTH, dm) );
         paint.setStrokeCap(Paint.Cap.ROUND);
         paint.setStrokeJoin(Paint.Join.ROUND);
         prefs = getSharedPreferences("paintbox",0);
 
-        tvInfo = (TextView) findViewById(R.id.info);
+        findViewById(R.id.trash).setOnClickListener(this::onClearClicked);
 
-        findViewById(R.id.trash).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Animation shiver = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.shiver);
-                v.startAnimation(shiver);
-                newBitmap();
-            }
-        });
+        findViewById(R.id.save).setOnClickListener(this::onSaveClicked);
+        findViewById(R.id.save).setOnLongClickListener(this::onSaveLongClicked);
 
-        findViewById(R.id.share).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(getApplicationContext(),R.string.hold_to_share,Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        findViewById(R.id.share).setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                Animation shiver = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.shiver);
-                v.startAnimation(shiver);
-                FileOutputStream out = null;
-                File file = null;
-                try {
-                    File dir = new File(getCacheDir(), "images");
-                    dir.mkdirs();
-                    file = new File(dir, "img_" + System.currentTimeMillis() + ".jpg");
-                    out = new FileOutputStream(file);
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 99, out);
-                } catch (IOException e) {
-                    Log.e("Malkasten", "Exception", e);
-                } finally {
-                    try {
-                        if (out != null) {
-                            out.close();
-                            shareImage(file);
-                            return true;
-                        }
-                    } catch (IOException e) {
-                        Log.e("Malkasten", "Exception", e);
-                    }
-                }
-                return false;
-            }
-        });
+    }
 
 
 
+    private boolean onSaveLongClicked(View view) {
+
+        Animation shiver = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.shiver);
+        view.startAnimation(shiver);
+
+        save();
+
+        return true;
+    }
+
+    private void save() {
+
+        Uri imageUri = getImageUri(this, bitmap);
+
+        Intent i = new Intent(Intent.ACTION_SEND);
+
+        i.setType("image/jpg");
+        i.putExtra(Intent.EXTRA_TITLE, getString(R.string.default_filename)+".jpg");
+        i.putExtra(Intent.EXTRA_STREAM, imageUri);
+        i.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        final PackageManager packageManager = getPackageManager();
+        final List<ResolveInfo> activities = packageManager.queryIntentActivities(i, PackageManager.MATCH_DEFAULT_ONLY);
+        for (ResolveInfo resolvedIntentInfo : activities) {
+            final String packageName = resolvedIntentInfo.activityInfo.packageName;
+            grantUriPermission(packageName, imageUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        }
+
+        try {
+            startActivity(i);
+        } catch (android.content.ActivityNotFoundException ex) {
+            // no app installed to save... should never happen.
+        }
+
+    }
+
+
+    public Uri getImageUri(Context inContext, Bitmap inImage) {
+
+        File imagePath = new File(getFilesDir(), "images");
+        File newFile = new File(imagePath, PseudoUUID.create()+".jpg");
+
+        try {
+            imagePath.mkdirs();
+            FileOutputStream fos = new FileOutputStream(newFile);
+            inImage.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, fos);
+            fos.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return FileProvider.getUriForFile(this, "de.ludetis.android.malkasten.fileprovider", newFile);
+
+    }
+
+    private void onClearClicked(View view) {
+        Animation shiver = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.shiver);
+        view.startAnimation(shiver);
+        newBitmap();
+    }
+
+    private void onSaveClicked(View view) {
+        showToast(R.string.hold_to_share);
     }
 
     @Override
@@ -147,49 +184,14 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
             hideSystemUi();
         }
 
-        SharedPreferences sp = getSharedPreferences("malkasten",0);
-        if(sp.getBoolean("showInfo",true)) {
+        if(prefs.getBoolean("showInfo1",true)) {
             showInfo();
         }
-        //showInfo(); // comment in to test this dialog
-        int starts = sp.getInt("starts1",0);
-        starts++;
-        SharedPreferences.Editor editor = sp.edit();
-        editor.putInt("starts1",starts);
 
-        if(starts ==  SHOW_PLEASE_RATE_AFTER_X_STARTS ) {
-            showPleaseRate();
-        }
-        // uncomment to test
-        //showPleaseRate();
-        editor.commit();
 
     }
 
-    private void showPleaseRate() {
-        final Dialog ad = new Dialog(this, android.R.style.Theme_Translucent_NoTitleBar_Fullscreen);
-        ad.setContentView(R.layout.dlg_please_rate);
-        ad.findViewById(R.id.start).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if(ad!=null) ad.dismiss();
-                final String appPackageName = getPackageName(); // getPackageName() from Context or Activity object
-                try {
-                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + appPackageName)));
-                }
-                catch (Exception e) {
-                    // silently
-                }
-            }
-        });
-        ad.findViewById(R.id.cancel).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if(ad!=null) ad.dismiss();
-            }
-        });
-        ad.show();
-    }
+
 
 
     private void hideSystemUi() {
@@ -210,26 +212,22 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
         ad.setContentView(R.layout.dlg_welcome);
         TextView tv = (TextView) ad.findViewById(R.id.info);
         tv.setMovementMethod(LinkMovementMethod.getInstance());
-        tv.setText(Html.fromHtml(getString(R.string.info)));
+        tv.setText(Html.fromHtml( getString(R.string.info)));
         ad.findViewById(R.id.start).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                SharedPreferences.Editor ed = prefs.edit();
+                ed.putBoolean("showInfo1",false);
+                ed.commit();
+
                 if(ad!=null) ad.dismiss();
             }
         });
+
         ad.show();
 
     }
 
-    private void shareImage(File f) {
-        Uri uriToImage = FileProvider.getUriForFile(this, "de.ludetis.android.malkasten.fileprovider", f);
-        Intent shareIntent = new Intent();
-        shareIntent.setAction(Intent.ACTION_SEND);
-        shareIntent.putExtra(Intent.EXTRA_STREAM, uriToImage);
-        shareIntent.setType("image/jpeg");
-        shareIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        startActivity(Intent.createChooser(shareIntent, getResources().getText(R.string.send_to)));
-    }
 
 
     private void newBitmap() {
@@ -254,17 +252,17 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
         float pressure = event.getPressure(actionIndex);
         notifyPressureCalibration(pressure);
         pressure = calcCalibratedPressure(pressure);
-        //tvInfo.setText(String.format("%1$.2f",pressure)); // TODO uncomment to have a pressure display
+        //tvInfo.setText(String.format("%1$.2f",pressure)); // uncomment to have a pressure display
         switch (action) {
             case MotionEvent.ACTION_DOWN:
                 from.put(pointerId, new Coord(x, y));
-                handler.postDelayed(hideSystemUiRunnable, 1000 * HIDE_SYSTEM_UI_DELAY);
-                break;
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) handler.postDelayed(hideSystemUiRunnable, 1000 * HIDE_SYSTEM_UI_DELAY);
+                return true;
 
             case MotionEvent.ACTION_POINTER_DOWN:
                 int id = pointerId;
                 from.put(id, new Coord(x, y));
-                break;
+                return true;
 
             case MotionEvent.ACTION_MOVE:
                 int numPointers = event.getPointerCount();
@@ -284,12 +282,12 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
                     }
                 }
 
-                break;
+                return true;
 
             case MotionEvent.ACTION_UP:
                 Coord ce = from.get(pointerId);
                 draw(ce.x, ce.y, x, y, pressure);
-                break;
+                return true;
 
             case MotionEvent.ACTION_POINTER_UP:
                 Coord ce2 = from.get(pointerId);
@@ -300,10 +298,9 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
                     ce2.x=event.getHistoricalX(actionIndex,i);
                     ce2.y=event.getHistoricalY(actionIndex,i);
                 }
-                break;
+                return true;
         }
 
-        // tell the system that we handled the event and no further processing is required
         return true;
     }
 
@@ -313,13 +310,13 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
         SharedPreferences.Editor ed = prefs.edit();
         if(pressure<minKnownPressure) {
             ed.putFloat("minPressure",pressure);
-            Log.d("LOG", "minPressure now is " + pressure);
+            Log.w("LOG", "minPressure now is " + pressure);
         }
         if(pressure>maxKnownPressure) {
             ed.putFloat("maxPressure",pressure);
-            Log.d("LOG", "maxPressure now is " + pressure);
+            Log.w("LOG", "maxPressure now is " + pressure);
         }
-        ed.commit();
+        ed.apply();
     }
 
     private float calcCalibratedPressure(float pressure) {
@@ -347,8 +344,24 @@ public class MalkastenActivity extends Activity implements View.OnTouchListener 
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        outState.putParcelable("bitmap", bitmap);
+        Paper.book().write(BITMAP,bitmap);
+        outState.putString(BITMAP,"saved");
         super.onSaveInstanceState(outState);
 
     }
+
+
+    private void showToast(int stringResId) {
+        Toast toast = new Toast(this);
+        toast.setGravity(Gravity.CENTER,0,0);
+        toast.setDuration(Toast.LENGTH_SHORT);
+        TextView textView = new TextView(this);
+        textView.setText(stringResId);
+        textView.setTextColor(getResources().getColor(R.color.black));
+        textView.setTextSize(32f);
+        toast.setView(textView);
+        toast.show();
+    }
+
+
 }

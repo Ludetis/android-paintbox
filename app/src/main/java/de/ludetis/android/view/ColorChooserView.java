@@ -10,6 +10,8 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 
 import de.ludetis.android.malkasten.R;
 
@@ -23,7 +25,7 @@ public class ColorChooserView extends View implements View.OnClickListener {
     private static Paint paint;
     private int color;
     private static int paintColor=Color.BLACK;
-    //private Animation shiver;
+    private Animation shiver;
 
     public ColorChooserView(Context context) {
         super(context);
@@ -50,7 +52,7 @@ public class ColorChooserView extends View implements View.OnClickListener {
     private void init() {
         setOnClickListener(this);
         setLayerType(View.LAYER_TYPE_SOFTWARE,null);
-        //shiver = AnimationUtils.loadAnimation(getContext(), R.anim.shiver);
+        shiver = AnimationUtils.loadAnimation(this.getContext(),R.anim.shiver);
     }
 
     @Override
@@ -72,7 +74,7 @@ public class ColorChooserView extends View implements View.OnClickListener {
     @Override
     public void onClick(View v) {
         paintColor = color;
-        //v.startAnimation(shiver);
+        v.startAnimation(shiver);
     }
 
     public static int getPaintColor() {

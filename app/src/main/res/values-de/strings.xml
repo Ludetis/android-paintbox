@@ -2,9 +2,14 @@
 <resources>
 
     <string name="app_name">Dein Malkasten</string>
-    <string name="send_to">Senden an...</string>
-    <string name="hold_to_share">Halten, um Bild zu teilen</string>
-    <string formatted="false" name="info">Der &lt;i>LUDETIS Malkasten für Kinder&lt;/i> ist gratis und werbefrei. Habt Spaß damit! Eure Eltern möchten vielleicht einen Blick auf unsere &lt;a href="https://play.google.com/store/apps/developer?id=Ludetis+UG+(haftungsbeschr%C3%A4nkt)">Spiele&lt;a> werfen.&lt;br>HINWEIS: Um versehentliche Benutzung zu verhindern, erfordert der Teilen-Knopf einen langen Fingerdruck!</string>
-    <string name="please_rate">Falls Dir diese App gefällt, bewerte sie doch bitte kurz bei Google Play! Vielen Dank!</string>
 
+    <string name="hold_to_share">Halten, um Bild zu speichern</string>
+    <string formatted="false" name="info">Der &lt;i>LUDETIS Malkasten für Kinder&lt;/i> ist gratis und werbefrei. Habt Spaß damit!
+        Eure Eltern möchten vielleicht einen Blick auf unsere &lt;a href="https://play.google.com/store/apps/developer?id=Ludetis+UG+(haftungsbeschr%C3%A4nkt)">Spiele&lt;a> werfen.
+        &lt;br>Leider unterstützen nicht alle Geräte die fingerdruckabhängige Strichstärke!
+        &lt;br>HINWEIS: Um versehentliche Benutzung zu verhindern, erfordert die Speichern-Funktion einen langen Fingerdruck!</string>
+    <string name="please_rate">Falls Dir diese App gefällt, bewerte sie doch bitte kurz bei Google Play! Vielen Dank!</string>
+    <string name="saved">Gespeichert!</string>
+    <string name="save_as">Speichern …</string>
+    <string name="default_filename">bild</string>
 </resources>
